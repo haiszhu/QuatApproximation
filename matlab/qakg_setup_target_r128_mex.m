@@ -1,0 +1,42 @@
+function [R, c, alpha, sxbd, sxpbd, stangbd, sspbd, txnew, snxnew, qhat, kdata] = qakg_setup_target_r128_mex(m, n, nbd, sbdnp, nquad, r_vert, tx, snx, sxbd_in, Dgl, R, c, alpha, sxbd, sxpbd, stangbd, sspbd, txnew, snxnew, qhat, kdata, ktri, flag)
+m     = double(m);
+n     = double(n);
+nbd   = double(nbd);
+sbdnp = double(sbdnp);
+nquad = double(nquad);
+r_vert  = double(reshape(r_vert,  3, 3));
+tx      = double(reshape(tx,      3, m));
+snx     = double(reshape(snx,     3, n));
+sxbd_in = double(reshape(sxbd_in, 3, nbd));
+Dgl     = double(reshape(Dgl,     nquad, nquad));
+if nargin < 11 || isempty(R),       R       = zeros(3, 3);   end
+if nargin < 12 || isempty(c),       c       = zeros(3, 1);   end
+if nargin < 13 || isempty(alpha),   alpha   = 0;             end
+if nargin < 14 || isempty(sxbd),    sxbd    = zeros(3, nbd); end
+if nargin < 15 || isempty(sxpbd),   sxpbd   = zeros(3, nbd); end
+if nargin < 16 || isempty(stangbd), stangbd = zeros(3, nbd); end
+if nargin < 17 || isempty(sspbd),   sspbd   = zeros(nbd, 1); end
+if nargin < 18 || isempty(txnew),   txnew   = zeros(3, m);   end
+if nargin < 19 || isempty(snxnew),  snxnew  = zeros(3, n);   end
+if nargin < 20 || isempty(qhat),    qhat    = zeros(3, 1);   end
+if nargin < 21 || isempty(kdata),   kdata   = zeros(3, m);   end
+if nargin < 22 || isempty(ktri),    ktri    = 0;             end
+if nargin < 23 || isempty(flag),    flag    = 0;             end
+R       = double(reshape(R,       3, 3));
+c       = double(c(:));
+alpha   = double(alpha);
+sxbd    = double(reshape(sxbd,    3, nbd));
+sxpbd   = double(reshape(sxpbd,   3, nbd));
+stangbd = double(reshape(stangbd, 3, nbd));
+sspbd   = double(sspbd(:));
+txnew   = double(reshape(txnew,   3, m));
+snxnew  = double(reshape(snxnew,  3, n));
+qhat    = double(qhat(:));
+kdata   = double(reshape(kdata,   3, m));
+ktri    = double(ktri);
+flag    = double(flag);
+mex_id_ = 'qakg_setup_target_r128_mex(c i int64_t[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i double[xx], c i double[xx], c i double[xx], c i double[xx], c i double[xx], c io double[xx], c io double[x], c io double[x], c io double[xx], c io double[xx], c io double[xx], c io double[x], c io double[xx], c io double[xx], c io double[x], c io double[xx], c i int64_t[x], c i int64_t[x])';
+[R, c, alpha, sxbd, sxpbd, stangbd, sspbd, txnew, snxnew, qhat, kdata] = QuatApproximation_mex(mex_id_, m, n, nbd, sbdnp, nquad, r_vert, tx, snx, sxbd_in, Dgl, R, c, alpha, sxbd, sxpbd, stangbd, sspbd, txnew, snxnew, qhat, kdata, ktri, flag, 1, 1, 1, 1, 1, 3, 3, 3, m, 3, n, 3, nbd, nquad, nquad, 3, 3, 3, 1, 3, nbd, 3, nbd, 3, nbd, nbd, 3, m, 3, n, 3, 3, m, 1, 1);
+end
+
+% --------------------------------------------------------------------------

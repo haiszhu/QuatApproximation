@@ -1,0 +1,492 @@
+% QuatApproximation.mw
+% mwrap interface for harmonic_mod (and future qkernel_mod, omega_mod).
+%
+% Build flags: mwrap -c99complex -i8 -mex
+% After generation: perl -pi -e 's/_{2,}/_/g' QuatApproximation_mex.c
+%
+% Per the design spec §9 universal-prefix rule, every top-level Fortran
+% mex wrapper carries the qa<m>_ prefix:
+%   qah_*  = harmonic_mod
+%   qak_*  = qkernel_mod   (not yet ported)
+%   qao_*  = omega_mod     (not yet ported)
+%
+% ============================================================
+% mwrap syntax reminder:
+%
+%   @function [inout1, inout2] = SubroutineName_mex(in1, in2, inout1, inout2)
+%   % optional MATLAB pre-processing (reshape, complex coercion, nargin defaults)
+%   # FORTRAN SubroutineName(type[dims] in1, type[dims] in2, inout type[dims] inout1, inout type[dims] inout2);
+%   end
+%
+% Conventions:
+% - inout variables appear on BOTH sides of the MATLAB call.
+% - type keywords: int, double, dcomplex
+% - dims: [1] scalar, [n] vector, [3,n] 2D array (col-major).
+%   mwrap only supports 1D/2D shapes; higher-rank Fortran arrays are
+%   passed flattened and remapped via c_f_pointer inside the *_mex.f90.
+% - Derived size variables (e.g. nc = (nterms+1)*(nterms+1)) are computed
+%   in the MATLAB-side block before the `# FORTRAN` line.
+%
+% ============================================================
+% koorn_geom_mod wrappers (qakg_*)
+% Vendored verbatim from LineQuaaadrature-legacy/matlab/LineQuaaadrature.mw
+% with lqkg_* -> qakg_* on the top-level wrapper names. Module-internal
+% procedure names inside koorn_geom_mod stay as the original (some carry
+% a legacy lqkg_ prefix, kept per "if they are the same, they are the same").
+% ============================================================
+
+% --------------------------------------------------------------------------
+@function [R, c, alpha] = qakg_circumcircle_transform_3d_mex(r_vert, R, c, alpha)
+r_vert = double(reshape(r_vert, 3, 3));
+R = double(reshape(R, 3, 3));
+c = double(c(:));
+alpha = double(alpha);
+# FORTRAN qakg_circumcircle_transform_3d_mex(double[3,3] r_vert, inout double[3,3] R, inout double[3] c, inout double[1] alpha);
+end
+
+@function [R, c, alpha] = qakg_circumcircle_transform_3d_r128_mex(r_vert, R, c, alpha, ktri, flag)
+r_vert = double(reshape(r_vert, 3, 3));
+if nargin < 2 || isempty(R),     R     = zeros(3, 3); end
+if nargin < 3 || isempty(c),     c     = zeros(3, 1); end
+if nargin < 4 || isempty(alpha), alpha = 0;           end
+if nargin < 5 || isempty(ktri),  ktri  = 0;           end
+if nargin < 6 || isempty(flag),  flag  = 0;           end
+R     = double(reshape(R, 3, 3));
+c     = double(c(:));
+alpha = double(alpha);
+ktri  = double(ktri);
+flag  = double(flag);
+# FORTRAN qakg_circumcircle_transform_3d_r128_mex(double[3,3] r_vert, inout double[3,3] R, inout double[3] c, inout double[1] alpha, int[1] ktri, int[1] flag);
+end
+
+@function [R, c, alpha, sxbd, sxpbd, stangbd, sspbd, txnew, snxnew, qhat, kdata] = qakg_setup_target_r128_mex(m, n, nbd, sbdnp, nquad, r_vert, tx, snx, sxbd_in, Dgl, R, c, alpha, sxbd, sxpbd, stangbd, sspbd, txnew, snxnew, qhat, kdata, ktri, flag)
+m     = double(m);
+n     = double(n);
+nbd   = double(nbd);
+sbdnp = double(sbdnp);
+nquad = double(nquad);
+r_vert  = double(reshape(r_vert,  3, 3));
+tx      = double(reshape(tx,      3, m));
+snx     = double(reshape(snx,     3, n));
+sxbd_in = double(reshape(sxbd_in, 3, nbd));
+Dgl     = double(reshape(Dgl,     nquad, nquad));
+if nargin < 11 || isempty(R),       R       = zeros(3, 3);   end
+if nargin < 12 || isempty(c),       c       = zeros(3, 1);   end
+if nargin < 13 || isempty(alpha),   alpha   = 0;             end
+if nargin < 14 || isempty(sxbd),    sxbd    = zeros(3, nbd); end
+if nargin < 15 || isempty(sxpbd),   sxpbd   = zeros(3, nbd); end
+if nargin < 16 || isempty(stangbd), stangbd = zeros(3, nbd); end
+if nargin < 17 || isempty(sspbd),   sspbd   = zeros(nbd, 1); end
+if nargin < 18 || isempty(txnew),   txnew   = zeros(3, m);   end
+if nargin < 19 || isempty(snxnew),  snxnew  = zeros(3, n);   end
+if nargin < 20 || isempty(qhat),    qhat    = zeros(3, 1);   end
+if nargin < 21 || isempty(kdata),   kdata   = zeros(3, m);   end
+if nargin < 22 || isempty(ktri),    ktri    = 0;             end
+if nargin < 23 || isempty(flag),    flag    = 0;             end
+R       = double(reshape(R,       3, 3));
+c       = double(c(:));
+alpha   = double(alpha);
+sxbd    = double(reshape(sxbd,    3, nbd));
+sxpbd   = double(reshape(sxpbd,   3, nbd));
+stangbd = double(reshape(stangbd, 3, nbd));
+sspbd   = double(sspbd(:));
+txnew   = double(reshape(txnew,   3, m));
+snxnew  = double(reshape(snxnew,  3, n));
+qhat    = double(qhat(:));
+kdata   = double(reshape(kdata,   3, m));
+ktri    = double(ktri);
+flag    = double(flag);
+# FORTRAN qakg_setup_target_r128_mex(int[1] m, int[1] n, int[1] nbd, int[1] sbdnp, int[1] nquad, double[3,3] r_vert, double[3,m] tx, double[3,n] snx, double[3,nbd] sxbd_in, double[nquad,nquad] Dgl, inout double[3,3] R, inout double[3] c, inout double[1] alpha, inout double[3,nbd] sxbd, inout double[3,nbd] sxpbd, inout double[3,nbd] stangbd, inout double[nbd] sspbd, inout double[3,m] txnew, inout double[3,n] snxnew, inout double[3] qhat, inout double[3,m] kdata, int[1] ktri, int[1] flag);
+end
+
+% --------------------------------------------------------------------------
+@function [uvs] = qakg_get_vioreanu_nodes_mex(norder, npols, uvs)
+% Vioreanu-Rokhlin reference-triangle nodes of order norder
+% (npols = (norder+1)*(norder+2)/2 columns).
+norder = double(norder);
+npols  = double(npols);
+if nargin < 3 || isempty(uvs), uvs = zeros(2, npols); end
+uvs = double(reshape(uvs, 2, npols));
+# FORTRAN qakg_get_vioreanu_nodes_mex(int[1] norder, int[1] npols, inout double[2,npols] uvs);
+end
+
+% --------------------------------------------------------------------------
+@function [wts] = qakg_get_vioreanu_wts_mex(norder, npols, wts)
+% Vioreanu-Rokhlin reference-triangle quadrature weights of order norder.
+norder = double(norder);
+npols  = double(npols);
+if nargin < 3 || isempty(wts), wts = zeros(npols, 1); end
+wts = double(wts(:));
+# FORTRAN qakg_get_vioreanu_wts_mex(int[1] norder, int[1] npols, inout double[npols] wts);
+end
+
+% --------------------------------------------------------------------------
+@function [umatr, vmatr] = qakg_koorn_vals2coefs_coefs2vals_mex(korder, kpols, umatr, vmatr)
+% Koornwinder vals<->coefs matrices at the VR nodes of order korder.
+korder = double(korder);
+kpols  = double(kpols);
+if nargin < 3 || isempty(umatr), umatr = zeros(kpols, kpols); end
+if nargin < 4 || isempty(vmatr), vmatr = zeros(kpols, kpols); end
+umatr = double(reshape(umatr, kpols, kpols));
+vmatr = double(reshape(vmatr, kpols, kpols));
+# FORTRAN qakg_koorn_vals2coefs_coefs2vals_mex(int[1] korder, int[1] kpols, inout double[kpols,kpols] umatr, inout double[kpols,kpols] vmatr);
+end
+
+% --------------------------------------------------------------------------
+@function [sxbd, swbd, stangbd, sspbd, r_vert] = qakg_line3quadr_3dline_mex(x_uvs, korder, kpols, umatr, nquad, tgl, wgl, Dgl, sbdnp, tpan, nbd, sxbd, swbd, stangbd, sspbd, r_vert)
+% GL boundary quadrature (nodes/weights/tangents/speeds) along the three
+% edges of a curved triangle described by Koornwinder coeffs.
+korder = double(korder);
+kpols  = double(kpols);
+nquad  = double(nquad);
+sbdnp    = double(sbdnp);
+nbd      = double(nbd);
+sbdnpp1  = sbdnp + 1;
+x_uvs    = double(reshape(x_uvs, 3, kpols));
+umatr    = double(reshape(umatr, kpols, kpols));
+tgl      = double(tgl(:));
+wgl      = double(wgl(:));
+Dgl      = double(reshape(Dgl, nquad, nquad));
+tpan     = double(tpan(:));
+if nargin < 12 || isempty(sxbd),    sxbd    = zeros(3, nbd); end
+if nargin < 13 || isempty(swbd),    swbd    = zeros(1, nbd); end
+if nargin < 14 || isempty(stangbd), stangbd = zeros(3, nbd); end
+if nargin < 15 || isempty(sspbd),   sspbd   = zeros(1, nbd); end
+if nargin < 16 || isempty(r_vert),  r_vert  = zeros(3, 3);   end
+sxbd    = double(reshape(sxbd,    3, nbd));
+swbd    = double(swbd(:)');
+stangbd = double(reshape(stangbd, 3, nbd));
+sspbd   = double(sspbd(:)');
+r_vert  = double(reshape(r_vert, 3, 3));
+# FORTRAN qakg_line3quadr_3dline_mex(double[3,kpols] x_uvs, int[1] korder, int[1] kpols, double[kpols,kpols] umatr, int[1] nquad, double[nquad] tgl, double[nquad] wgl, double[nquad,nquad] Dgl, int[1] sbdnp, double[sbdnpp1] tpan, int[1] nbd, inout double[3,nbd] sxbd, inout double[nbd] swbd, inout double[3,nbd] stangbd, inout double[nbd] sspbd, inout double[3,3] r_vert);
+end
+
+% ============================================================
+% harmonic_mod wrappers (qah_*)
+% ============================================================
+
+% ============================================================
+% quatapproximation_mod wrappers (qaq_*)
+% ============================================================
+
+% --------------------------------------------------------------------------
+@function [tgl, wgl, Dgl] = qaq_gauss_mex(n, tgl, wgl, Dgl)
+% Gauss-Legendre nodes (tgl), weights (wgl), and differentiation matrix (Dgl)
+% on [-1, 1] for the given order n.
+n = double(n);
+if nargin < 2 || isempty(tgl), tgl = zeros(n, 1);    end
+if nargin < 3 || isempty(wgl), wgl = zeros(n, 1);    end
+if nargin < 4 || isempty(Dgl), Dgl = zeros(n, n);    end
+tgl = double(tgl(:));
+wgl = double(wgl(:));
+Dgl = double(reshape(Dgl, n, n));
+# FORTRAN qaq_gauss_mex(int[1] n, inout double[n] tgl, inout double[n] wgl, inout double[n,n] Dgl);
+end
+
+% --------------------------------------------------------------------------
+@function [uvs_eq, detJ] = qaq_simplex2equil_with_detj_mex(npts, h_side, uvs, uvs_eq, detJ)
+% simplex2equil with Jacobian determinant (detJ = sqrt(3)/2 * h_side^2).
+npts    = double(npts);
+h_side  = double(h_side);
+uvs     = double(reshape(uvs, 2, npts));
+if nargin < 4 || isempty(uvs_eq), uvs_eq = zeros(2, npts); end
+if nargin < 5 || isempty(detJ),   detJ   = 0;              end
+uvs_eq  = double(reshape(uvs_eq, 2, npts));
+detJ    = double(detJ);
+# FORTRAN qaq_simplex2equil_with_detj_mex(int[1] npts, double[1] h_side, double[2,npts] uvs, inout double[2,npts] uvs_eq, inout double[1] detJ);
+end
+
+% --------------------------------------------------------------------------
+@function [x, nx, sp, rts, rps, rtts, rpps, rtps] = qaq_paraboloidparam_mex(npts, h, a, t, p, x, nx, sp, rts, rps, rtts, rpps, rtps)
+% Downward-opening paraboloid eval: r(t,p) = [t; p; h*(1 - (t^2+p^2)/a^2)],
+% with first/second partials and the (cross(rp, rt))-based outward normal.
+npts = double(npts);
+h    = double(h);
+a    = double(a);
+t    = double(t(:)');
+p    = double(p(:)');
+if nargin < 6  || isempty(x),    x    = zeros(3, npts); end
+if nargin < 7  || isempty(nx),   nx   = zeros(3, npts); end
+if nargin < 8  || isempty(sp),   sp   = zeros(1, npts); end
+if nargin < 9  || isempty(rts),  rts  = zeros(3, npts); end
+if nargin < 10 || isempty(rps),  rps  = zeros(3, npts); end
+if nargin < 11 || isempty(rtts), rtts = zeros(3, npts); end
+if nargin < 12 || isempty(rpps), rpps = zeros(3, npts); end
+if nargin < 13 || isempty(rtps), rtps = zeros(3, npts); end
+x    = double(reshape(x,    3, npts));
+nx   = double(reshape(nx,   3, npts));
+sp   = double(sp(:)');
+rts  = double(reshape(rts,  3, npts));
+rps  = double(reshape(rps,  3, npts));
+rtts = double(reshape(rtts, 3, npts));
+rpps = double(reshape(rpps, 3, npts));
+rtps = double(reshape(rtps, 3, npts));
+# FORTRAN qaq_paraboloidparam_mex(int[1] npts, double[1] h, double[1] a, double[npts] t, double[npts] p, inout double[3,npts] x, inout double[3,npts] nx, inout double[npts] sp, inout double[3,npts] rts, inout double[3,npts] rps, inout double[3,npts] rtts, inout double[3,npts] rpps, inout double[3,npts] rtps);
+end
+
+% --------------------------------------------------------------------------
+@function [sub_tris] = qaq_subdivide_simplex_mex(Cx, Cy, scale, orientation, sub_tris)
+% One uniform-refinement step on a simplex triangle.
+Cx          = double(Cx);
+Cy          = double(Cy);
+scale       = double(scale);
+orientation = double(orientation);
+if nargin < 5 || isempty(sub_tris), sub_tris = zeros(4, 4); end
+sub_tris    = double(reshape(sub_tris, 4, 4));
+# FORTRAN qaq_subdivide_simplex_mex(double[1] Cx, double[1] Cy, double[1] scale, double[1] orientation, inout double[4,4] sub_tris);
+end
+
+% --------------------------------------------------------------------------
+@function [uvs_all] = qaq_assemble_subdivided_nodes_mex(N, M, uvs_simplex, sub_tris, uvs_all)
+% Lay out N reference simplex VR nodes inside each of M subdivided
+% triangles described by sub_tris(M, 4).
+N    = double(N);
+M    = double(M);
+NM   = N * M;
+uvs_simplex = double(reshape(uvs_simplex, 2, N));
+sub_tris    = double(reshape(sub_tris,    M, 4));
+if nargin < 5 || isempty(uvs_all), uvs_all = zeros(2, NM); end
+uvs_all     = double(reshape(uvs_all, 2, NM));
+# FORTRAN qaq_assemble_subdivided_nodes_mex(int[1] N, int[1] M, double[2,N] uvs_simplex, double[M,4] sub_tris, inout double[2,NM] uvs_all);
+end
+
+% --------------------------------------------------------------------------
+@function [all_tris] = qaq_get_subdivided_triangles_mex(C0, s0, o0, L, all_tris)
+% Recursively apply subdivide_simplex L times; output is (4^L, 4).
+C0 = double(C0(:));
+s0 = double(s0);
+o0 = double(o0);
+L  = double(L);
+nL = 4^L;
+if nargin < 5 || isempty(all_tris), all_tris = zeros(nL, 4); end
+all_tris = double(reshape(all_tris, nL, 4));
+# FORTRAN qaq_get_subdivided_triangles_mex(double[2] C0, double[1] s0, double[1] o0, int[1] L, inout double[nL,4] all_tris);
+end
+
+% --------------------------------------------------------------------------
+@function [w_bclag] = qaq_bclaginterpweights_mex(n, tgl, w_bclag)
+% Barycentric Lagrange interp weights at the given nodes tgl.
+n   = double(n);
+tgl = double(tgl(:));
+if nargin < 3 || isempty(w_bclag), w_bclag = zeros(n, 1); end
+w_bclag = double(w_bclag(:));
+# FORTRAN qaq_bclaginterpweights_mex(int[1] n, double[n] tgl, inout double[n] w_bclag);
+end
+
+% --------------------------------------------------------------------------
+@function [uvs_eq] = qaq_simplex2equil_mex(npts, h_side, uvs, uvs_eq)
+% Map npts simplex points uvs(2,npts) to an equilateral triangle of
+% side length h_side centered at the origin.
+npts    = double(npts);
+h_side  = double(h_side);
+uvs     = double(reshape(uvs, 2, npts));
+if nargin < 4 || isempty(uvs_eq), uvs_eq = zeros(2, npts); end
+uvs_eq  = double(reshape(uvs_eq, 2, npts));
+# FORTRAN qaq_simplex2equil_mex(int[1] npts, double[1] h_side, double[2,npts] uvs, inout double[2,npts] uvs_eq);
+end
+
+% --------------------------------------------------------------------------
+@function [x] = qaq_paraboloid_uv_mex(npts, H, u, v, x)
+% Elliptic paraboloid x(3,npts) = [u; v; (H/2)(u^2+v^2)].
+npts = double(npts);
+H    = double(H);
+u    = double(u(:)');
+v    = double(v(:)');
+if nargin < 5 || isempty(x), x = zeros(3, npts); end
+x    = double(reshape(x, 3, npts));
+# FORTRAN qaq_paraboloid_uv_mex(int[1] npts, double[1] H, double[npts] u, double[npts] v, inout double[3,npts] x);
+end
+
+% --------------------------------------------------------------------------
+@function [fx, fy, fz, f, ijidx] = qah_evaltensorproductharmonicgrad_mex(nt, r, order, fx, fy, fz, f, ijidx)
+% Tensor-product harmonic polynomial basis H_{i,j} and Cartesian gradient
+% evaluated at nt 3D points r(3, nt). Outputs are (nt, order^2) real
+% arrays; ijidx is (2, order^2) integer pairs.
+nt     = double(nt);
+order  = double(order);
+order2 = order*order;
+r      = double(reshape(r, 3, nt));
+if nargin < 4 || isempty(fx),    fx    = zeros(nt, order2); end
+if nargin < 5 || isempty(fy),    fy    = zeros(nt, order2); end
+if nargin < 6 || isempty(fz),    fz    = zeros(nt, order2); end
+if nargin < 7 || isempty(f),     f     = zeros(nt, order2); end
+if nargin < 8 || isempty(ijidx), ijidx = zeros(2, order2);  end
+fx    = double(reshape(fx,    nt, order2));
+fy    = double(reshape(fy,    nt, order2));
+fz    = double(reshape(fz,    nt, order2));
+f     = double(reshape(f,     nt, order2));
+ijidx = double(reshape(ijidx, 2,  order2));
+# FORTRAN qah_evaltensorproductharmonicgrad_mex(int[1] nt, double[3,nt] r, int[1] order, inout double[nt,order2] fx, inout double[nt,order2] fy, inout double[nt,order2] fz, inout double[nt,order2] f, inout int[2,order2] ijidx);
+end
+
+% --------------------------------------------------------------------------
+@function [F, Fx, Fy, Fz, ier] = qah_l3dtavecevalmat_mex(ztargs, nt, nterms, F, Fx, Fy, Fz, ier)
+% 3D Laplace solid spherical harmonics: values F and Cartesian gradient
+% (Fx, Fy, Fz) at target points ztargs(3, nt). Each output is shaped
+% (nt, (nterms+1)^2), one column per basis index (l, m) for
+% 0 <= l <= nterms, -l <= m <= l.
+%
+% Thin r64 wrapper for harmonic_mod::l3dtavecevalmat_r64.
+nt     = double(nt);
+nterms = double(nterms);
+nc     = (nterms+1)*(nterms+1);
+ztargs = double(reshape(ztargs, 3, nt));
+if nargin < 4 || isempty(F),   F   = complex(zeros(nt, nc)); end
+if nargin < 5 || isempty(Fx),  Fx  = complex(zeros(nt, nc)); end
+if nargin < 6 || isempty(Fy),  Fy  = complex(zeros(nt, nc)); end
+if nargin < 7 || isempty(Fz),  Fz  = complex(zeros(nt, nc)); end
+if nargin < 8 || isempty(ier), ier = 0;                       end
+F   = complex(reshape(F,  nt, nc));
+Fx  = complex(reshape(Fx, nt, nc));
+Fy  = complex(reshape(Fy, nt, nc));
+Fz  = complex(reshape(Fz, nt, nc));
+ier = double(ier);
+# FORTRAN qah_l3dtavecevalmat_mex(double[3,nt] ztargs, int[1] nt, int[1] nterms, inout dcomplex[nt,nc] F, inout dcomplex[nt,nc] Fx, inout dcomplex[nt,nc] Fy, inout dcomplex[nt,nc] Fz, inout int[1] ier);
+end
+
+% --------------------------------------------------------------------------
+@function [F, Fx, Fy, Fz, ier] = qah_l3dtavecevalmat_r128_mex(ztargs, nt, nterms, F, Fx, Fy, Fz, ier, flag)
+% r128 evaluation with the design-spec §10 trailing-flag contract.
+%   flag = 0 : cast r64 inputs to r128, run harmonic_mod::l3dtavecevalmat_r128,
+%              cast outputs back to r64.
+%   flag = 1 : reserved for HDF5 round-trip with a downstream r128 consumer
+%              (layout deferred; currently aborts).
+nt     = double(nt);
+nterms = double(nterms);
+nc     = (nterms+1)*(nterms+1);
+ztargs = double(reshape(ztargs, 3, nt));
+if nargin < 4 || isempty(F),    F    = complex(zeros(nt, nc)); end
+if nargin < 5 || isempty(Fx),   Fx   = complex(zeros(nt, nc)); end
+if nargin < 6 || isempty(Fy),   Fy   = complex(zeros(nt, nc)); end
+if nargin < 7 || isempty(Fz),   Fz   = complex(zeros(nt, nc)); end
+if nargin < 8 || isempty(ier),  ier  = 0;                       end
+if nargin < 9 || isempty(flag), flag = 0;                       end
+F    = complex(reshape(F,  nt, nc));
+Fx   = complex(reshape(Fx, nt, nc));
+Fy   = complex(reshape(Fy, nt, nc));
+Fz   = complex(reshape(Fz, nt, nc));
+ier  = double(ier);
+flag = double(flag);
+# FORTRAN qah_l3dtavecevalmat_r128_mex(double[3,nt] ztargs, int[1] nt, int[1] nterms, inout dcomplex[nt,nc] F, inout dcomplex[nt,nc] Fx, inout dcomplex[nt,nc] Fy, inout dcomplex[nt,nc] Fz, inout int[1] ier, int[1] flag);
+end
+
+% --------------------------------------------------------------------------
+% qak_qnm_i_mex
+% q^{(n,m)}_i kernel-coefficient builder. idx in {0,1,2,3}.
+% lptype_id: 0='d' (DLP/SLPn, 4 active slots), 1='s' (SLP, 5 slots),
+%            2='T' (DLPn, NOT YET IMPLEMENTED -- error_stop).
+% Outputs are sized at the max rank (5 slots); inactive slots are zero.
+% --------------------------------------------------------------------------
+@function [q_i, q_j, q_k] = qak_qnm_i_mex(idx, sx, lptype_id, F, F1, F2, F3, gradxyz)
+idx       = double(idx);
+lptype_id = double(lptype_id);
+sx        = double(reshape(sx, 3, []));
+N         = size(sx, 2);
+F1        = double(reshape(F1, N, []));
+ncoeff    = size(F1, 2);
+F         = double(reshape(F,  N, ncoeff));
+F2        = double(reshape(F2, N, ncoeff));
+F3        = double(reshape(F3, N, ncoeff));
+if nargin < 8 || isempty(gradxyz), gradxyz = zeros(3, N); end
+gradxyz   = double(reshape(gradxyz, 3, N));
+Ncoeff    = N * ncoeff;
+q_i = zeros(Ncoeff, 5);
+q_j = zeros(Ncoeff, 5);
+q_k = zeros(Ncoeff, 5);
+# FORTRAN qak_qnm_i_mex(int[1] idx, int[1] N, int[1] ncoeff, double[3,N] sx, int[1] lptype_id, double[N,ncoeff] F, double[N,ncoeff] F1, double[N,ncoeff] F2, double[N,ncoeff] F3, double[3,N] gradxyz, inout double[Ncoeff,5] q_i, inout double[Ncoeff,5] q_j, inout double[Ncoeff,5] q_k);
+q_i = reshape(q_i, N, ncoeff, 5);
+q_j = reshape(q_j, N, ncoeff, 5);
+q_k = reshape(q_k, N, ncoeff, 5);
+end
+
+% --------------------------------------------------------------------------
+% qao_omeganm_i_mex
+% omega^{(n,m)}_i boundary-integrand assembly: (dr x r) . q.
+% nslots is inferred from the q_* inputs (size along dim 3).
+% --------------------------------------------------------------------------
+@function [onm] = qao_omeganm_i_mex(r, dr, q_i, q_j, q_k)
+r       = double(reshape(r,  3, []));
+N       = size(r, 2);
+dr      = double(reshape(dr, 3, N));
+ncoeff  = size(q_i, 2);
+nslots  = size(q_i, 3);
+Ncoeff  = N * ncoeff;
+q_i     = double(reshape(q_i, Ncoeff, nslots));
+q_j     = double(reshape(q_j, Ncoeff, nslots));
+q_k     = double(reshape(q_k, Ncoeff, nslots));
+onm     = zeros(Ncoeff, nslots);
+# FORTRAN qao_omeganm_i_mex(int[1] N, int[1] ncoeff, int[1] nslots, double[3,N] r, double[3,N] dr, double[Ncoeff,nslots] q_i, double[Ncoeff,nslots] q_j, double[Ncoeff,nslots] q_k, inout double[Ncoeff,nslots] onm);
+onm     = reshape(onm, N, ncoeff, nslots);
+end
+
+% --------------------------------------------------------------------------
+% qao_omegaall_mex
+% Target-dependent Omega assembly across all four kernel coefficient
+% channels (omega0..omega3).  Mirrors qotential's omegaall_mex.
+%
+% Inputs (MATLAB shapes match qotential's omegaall_mex.m signature):
+%   r0   (3, m)        target points
+%   M_all (n*morder, m) or (n, morder, m); reshaped internally to (dim1, m)
+%   order (scalar)     -> morder = 2*order + 2
+%   onm_0..onm_3 (n*h_dim, 4)  flattened (n, h_dim, 4)
+%   h_dim (scalar)     -> h_dim = order^2
+%   ijIdx (2, h_dim)
+% Output:
+%   Omega (m, 4*h_dim)
+% --------------------------------------------------------------------------
+@function [Omega] = qao_omegaall_mex(r0, M_all, order, onm_0, onm_1, onm_2, onm_3, h_dim, ijIdx)
+order   = double(order);
+h_dim   = double(h_dim);
+r0      = double(reshape(r0, 3, []));
+m       = size(r0, 2);
+M_all   = double(reshape(M_all, [], m));
+dim1    = size(M_all, 1);
+n       = size(onm_0, 1) / h_dim;
+morder  = 2*order + 2;
+h_dim4  = 4 * h_dim;
+nh_dim  = n * h_dim;
+onm_0   = double(reshape(onm_0, nh_dim, 4));
+onm_1   = double(reshape(onm_1, nh_dim, 4));
+onm_2   = double(reshape(onm_2, nh_dim, 4));
+onm_3   = double(reshape(onm_3, nh_dim, 4));
+ijIdx   = double(reshape(ijIdx, 2, h_dim));
+Omega   = zeros(m, h_dim4);
+# FORTRAN qao_omegaall_mex(int[1] m, int[1] dim1, int[1] n, int[1] h_dim, int[1] morder, double[3,m] r0, double[dim1,m] M_all, double[nh_dim,4] onm_0, double[nh_dim,4] onm_1, double[nh_dim,4] onm_2, double[nh_dim,4] onm_3, int[2,h_dim] ijIdx, inout double[m,h_dim4] Omega);
+end
+
+% --------------------------------------------------------------------------
+% qatg_line3quadr_3dline_T_mex
+% Tensor-product analog of qakg_line3quadr_3dline_mex: GL boundary nodes,
+% weights, tangents, speeds for a square source patch.
+%
+% Inputs (MATLAB shapes match the qotential 'T' branch of quadr_3dline):
+%   x_uvs (3, ordert^2)  source patch values at GL tensor grid
+%   ordert (scalar)      1D tensor order (inferred from sqrt(size(x_uvs,2)))
+%   nquad  (scalar)      panel order
+%   tgl, wgl (nquad)     GL nodes/weights
+%   Dgl    (nquad,nquad) GL differentiation matrix
+%   tpan   (sbdnp+1)     panel breakpoints in [0, 2pi]
+% Outputs:
+%   sxbd   (3, nbd)      boundary node positions
+%   swbd   (nbd)         speed-weighted GL weights
+%   stangbd(3, nbd)      unit tangent vectors
+%   sspbd  (nbd)         speeds
+% --------------------------------------------------------------------------
+@function [sxbd, swbd, stangbd, sspbd] = qatg_line3quadr_3dline_T_mex(x_uvs, ordert, nquad, tgl, wgl, Dgl, tpan)
+ordert    = double(ordert);
+nquad     = double(nquad);
+nordert2  = ordert * ordert;
+x_uvs     = double(reshape(x_uvs, 3, nordert2));
+tgl       = double(tgl(:));
+wgl       = double(wgl(:));
+Dgl       = double(reshape(Dgl, nquad, nquad));
+tpan      = double(tpan(:));
+sbdnp     = numel(tpan) - 1;
+sbdnp1    = sbdnp + 1;
+nbd       = sbdnp * nquad;
+sxbd      = zeros(3, nbd);
+swbd      = zeros(nbd, 1);
+stangbd   = zeros(3, nbd);
+sspbd     = zeros(nbd, 1);
+# FORTRAN qatg_line3quadr_3dline_T_mex(double[3,nordert2] x_uvs, int[1] ordert, int[1] nquad, double[nquad] tgl, double[nquad] wgl, double[nquad,nquad] Dgl, int[1] sbdnp, double[sbdnp1] tpan, int[1] nbd, inout double[3,nbd] sxbd, inout double[nbd] swbd, inout double[3,nbd] stangbd, inout double[nbd] sspbd);
+end

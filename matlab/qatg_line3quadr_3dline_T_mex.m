@@ -1,0 +1,19 @@
+function [sxbd, swbd, stangbd, sspbd] = qatg_line3quadr_3dline_T_mex(x_uvs, ordert, nquad, tgl, wgl, Dgl, tpan)
+ordert    = double(ordert);
+nquad     = double(nquad);
+nordert2  = ordert * ordert;
+x_uvs     = double(reshape(x_uvs, 3, nordert2));
+tgl       = double(tgl(:));
+wgl       = double(wgl(:));
+Dgl       = double(reshape(Dgl, nquad, nquad));
+tpan      = double(tpan(:));
+sbdnp     = numel(tpan) - 1;
+sbdnp1    = sbdnp + 1;
+nbd       = sbdnp * nquad;
+sxbd      = zeros(3, nbd);
+swbd      = zeros(nbd, 1);
+stangbd   = zeros(3, nbd);
+sspbd     = zeros(nbd, 1);
+mex_id_ = 'qatg_line3quadr_3dline_T_mex(c i double[xx], c i int64_t[x], c i int64_t[x], c i double[x], c i double[x], c i double[xx], c i int64_t[x], c i double[x], c i int64_t[x], c io double[xx], c io double[x], c io double[xx], c io double[x])';
+[sxbd, swbd, stangbd, sspbd] = QuatApproximation_mex(mex_id_, x_uvs, ordert, nquad, tgl, wgl, Dgl, sbdnp, tpan, nbd, sxbd, swbd, stangbd, sspbd, 3, nordert2, 1, 1, nquad, nquad, nquad, nquad, 1, sbdnp1, 1, 3, nbd, nbd, 3, nbd, nbd);
+end
