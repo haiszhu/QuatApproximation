@@ -11,4 +11,7 @@ paraboloid_refinement_myerr.dat
 # mex binary (rebuilt by `make mex`)
 matlab/QuatApproximation_mex.mexmaca64
 
+# build artifacts
+build/
+
 .DS_Store
