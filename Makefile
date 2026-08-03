@@ -20,8 +20,17 @@ MATLAB_DIR := $(ROOT)/matlab
 BLD_DIR    := $(ROOT)/build
 
 # ---- compilers ----
-FC := gfortran-15
-CC := gcc-15
+# Homebrew retires versioned formulae -- gcc@15 is now a dangling symlink into
+# gcc 16 -- so a hardcoded gfortran-NN breaks on the next upgrade.  Take the
+# newest one installed; FC/CC given on the command line still win.
+ifneq ($(filter default environment,$(origin FC)),)
+  FC := $(shell for c in gfortran-16 gfortran-15 gfortran-14 gfortran-13 gfortran; do \
+                  command -v $$c >/dev/null 2>&1 && { echo $$c; exit 0; }; done; echo gfortran)
+endif
+ifneq ($(filter default environment,$(origin CC)),)
+  CC := $(shell for c in gcc-16 gcc-15 gcc-14 gcc-13 gcc; do \
+                  command -v $$c >/dev/null 2>&1 && { echo $$c; exit 0; }; done; echo gcc)
+endif
 MW := ~/mwrap/mwrap
 MWFLAGS := -c99complex -i8 -mex
 
@@ -29,11 +38,24 @@ MWFLAGS := -c99complex -i8 -mex
 UNAME := $(shell uname)
 ARCH  := $(shell uname -m)
 
+# Homebrew prefix: /opt/homebrew on Apple Silicon, /usr/local on Intel.
+BREW := /opt/homebrew
+ifeq ($(UNAME), Darwin)
+  ifneq ($(ARCH), arm64)
+    BREW := /usr/local
+  endif
+endif
+
 ifeq ($(UNAME), Darwin)
   MATLAB_ROOT  := $(shell ls -d /Applications/MATLAB_R*.app 2>/dev/null | sort | tail -n1)
-  MATLAB_ARCH  := maca64
-  MEX_EXT      := mexmaca64
-  OPENBLAS_DIR := /opt/homebrew/opt/openblas-singlethread
+  ifeq ($(ARCH), arm64)
+    MATLAB_ARCH  := maca64
+    MEX_EXT      := mexmaca64
+  else
+    MATLAB_ARCH  := maci64
+    MEX_EXT      := mexmaci64
+  endif
+  OPENBLAS_DIR := $(BREW)/opt/openblas-singlethread
   MATLAB_INC   := -I$(MATLAB_ROOT)/extern/include
   MATLAB_LIBS  := $(MATLAB_ROOT)/bin/$(MATLAB_ARCH)/libmx.dylib \
                   $(MATLAB_ROOT)/bin/$(MATLAB_ARCH)/libmex.dylib \
@@ -49,7 +71,7 @@ else
 endif
 
 OPENBLAS_LIBS := -L$(OPENBLAS_DIR)/lib -lopenblas
-HDF5_ROOT ?= /opt/homebrew/opt/hdf5
+HDF5_ROOT ?= $(BREW)/opt/hdf5
 HDF5_INC := -I$(HDF5_ROOT)/include
 HDF5_LIBS := -L$(HDF5_ROOT)/lib -lhdf5
 

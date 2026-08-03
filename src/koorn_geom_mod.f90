@@ -19,7 +19,7 @@ module koorn_geom_mod
   public :: koorn_vals2coefs_coefs2vals, line3quadr_3dline, &
             circumcircle_transform_3d, circumcircle_transform_3d_r128, &
             lqkg_setup_target_r128, get_vioreanu_nodes, get_vioreanu_wts, &
-            lu_solve_r128
+            koorn_pols, koorn_pols_batch_r64, lu_solve_r128
 
 contains
 
@@ -77,6 +77,68 @@ contains
     npols = iii
 
   end subroutine koorn_pols
+
+  subroutine koorn_pols_batch_r64(n, uv, nmax, npols, pols)
+    integer(8), intent(in)  :: n, nmax, npols
+    real(r64),  intent(in)  :: uv(2,n)
+    real(r64),  intent(out) :: pols(n,npols)
+
+    real(r64)  :: jc(3,0:nmax,0:nmax), sc1(0:nmax,0:nmax)
+    real(r64)  :: legpols(0:nmax+1), jacpols(0:nmax,0:nmax)
+    real(r64)  :: u, v, z, y, x, an, bn, cn
+    integer(8) :: i, k, q, iii
+
+    jc  = 0.0_r64
+    sc1 = 0.0_r64
+    do k = 0, nmax
+      do q = 1, nmax-k-1
+        an = real((2*q+2*k+1+1)*(2*q+2*k+1+2),r64) / real(2*(q+1)*(q+2*k+1+1),r64)
+        bn = -real((2*k+1)**2,r64) * real(2*q+2*k+1+1,r64) &
+             / real(2*(q+1)*(q+2*k+1+1)*(2*q+2*k+1),r64)
+        cn = real(q*(q+2*k+1)*(2*q+2*k+1+2),r64) &
+             / real((q+1)*(q+2*k+1+1)*(2*q+2*k+1),r64)
+        jc(1,q+1,k) = an
+        jc(2,q+1,k) = bn
+        jc(3,q+1,k) = cn
+      end do
+    end do
+    do q = 0, nmax
+      do k = 0, q
+        sc1(q-k,k) = sqrt(1.0_r64 / real((2*k+1)*(2*q+2),r64))
+      end do
+    end do
+
+    do i = 1, n
+      u = uv(1,i);  v = uv(2,i)
+      z = 2.0_r64*u + v - 1.0_r64
+      y = 1.0_r64 - v
+
+      legpols(0) = 1.0_r64
+      legpols(1) = z
+      do k = 1, nmax
+        legpols(k+1) = ((2*k+1)*z*legpols(k) - k*legpols(k-1)*y*y) / real(k+1,r64)
+      end do
+
+      x = 1.0_r64 - 2.0_r64*v
+      do k = 0, nmax
+        jacpols(0,k) = 1.0_r64
+        jacpols(1,k) = (-real(2*k+1,r64) + real(2+2*k+1,r64)*x) / 2.0_r64
+        do q = 1, nmax-k-1
+          jacpols(q+1,k) = (jc(1,q+1,k)*x + jc(2,q+1,k))*jacpols(q,k) &
+                         - jc(3,q+1,k)*jacpols(q-1,k)
+        end do
+      end do
+
+      iii = 0
+      do q = 0, nmax
+        do k = 0, q
+          iii = iii + 1
+          pols(i,iii) = legpols(k)*jacpols(q-k,k) / sc1(q-k,k)
+        end do
+      end do
+    end do
+
+  end subroutine koorn_pols_batch_r64
 
   ! ----------------------------------------------------------------
   ! get_vioreanu_nodes  (private)
