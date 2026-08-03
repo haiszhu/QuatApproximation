@@ -1,4 +1,4 @@
-# QuatApproximation
+# QuatApproximation (outdated)
 
 Quaternion-approximation reference code (Fortran + MATLAB MEX on Mac).
 
@@ -9,7 +9,7 @@ This code was written by Codex and Claude Code as a testbed to reproduce parts o
 - Shidong Jiang and Hai Zhu, *Recursive reduction quadrature for the evaluation of Laplace layer potentials in three dimensions*, arXiv:2411.08342 (2024).
   https://arxiv.org/abs/2411.08342
 
-The main purpose is to provide the quaternion-approximation and solid-spherical-harmonic building blocks (`q^{(n,m)}_i`, `omega^{(n,m)}_i`, harmonic basis values + gradients, Koornwinder/Vioreanu and tensor-product reference-element geometry, ...) in r64 and r128 so they can be combined with [LineQuaaadrature](https://github.com/haiszhu/LineQuaaadrature) to serve the close-evaluation chain in [qotential](https://github.com/haiszhu/qotential).
+One purpose is to provide the quaternion-approximation and solid-spherical-harmonic building blocks (`q^{(n,m)}_i`, `omega^{(n,m)}_i`, harmonic basis values + gradients, Koornwinder/Vioreanu and tensor-product reference-element geometry, ...) in r64 and r128 so they can be combined with [LineQuaaadrature](https://github.com/haiszhu/LineQuaaadrature) to serve the close-evaluation chain in [qotential](https://github.com/haiszhu/qotential).
 
 ## Layout
 - `src/` Fortran source modules
@@ -62,3 +62,7 @@ Open items are tracked in [`PLAN.md`](PLAN.md).  Notably, the local-to-local tra
 - Compiler settings are in `Makefile` (currently `gfortran-15`, `gcc-15`).
 - MEX wrappers are generated from `matlab/QuatApproximation.mw` using `mwrap`.
 - `src/SUBROUTINES.md` is the authoritative per-routine inventory (signatures, purposes, r64/r128 status).
+
+## To do list
+
+* Slm basis, locloc, etc (redesign with both dense mat vec and sparse for loop)
