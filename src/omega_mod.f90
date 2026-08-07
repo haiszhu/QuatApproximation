@@ -16,7 +16,9 @@ module omega_mod
   implicit none
   private
   public :: qao_omeganm_i_r64, qao_omegaall_r64
+#ifndef BIESOLVER_R64_ONLY
   public :: qao_omeganm_i_r128, qao_omegaall_r128
+#endif
   public :: qao_omegasdlp_r64
 
 contains
@@ -137,6 +139,7 @@ contains
   ! orchestration.
   ! ================================================================
 
+#ifndef BIESOLVER_R64_ONLY
   subroutine qao_omeganm_i_r128(N, ncoeff, nslots, r, dr, q_i, q_j, q_k, onm)
     integer(8), intent(in)  :: N, ncoeff, nslots
     real(r128), intent(in)  :: r (3, N), dr(3, N)
@@ -157,7 +160,9 @@ contains
       end do
     end do
   end subroutine qao_omeganm_i_r128
+#endif
 
+#ifndef BIESOLVER_R64_ONLY
   subroutine qao_omegaall_r128(m, dim1, n, h_dim, morder, r0, M_all, &
                                onm0, onm1, onm2, onm3, ijIdx, omega)
     integer(8), intent(in)  :: m, dim1, n, h_dim, morder
@@ -223,6 +228,7 @@ contains
 !$OMP END PARALLEL DO
 
   end subroutine qao_omegaall_r128
+#endif
 
   subroutine qao_omegasdlp_r64(m, nterms, ncoeff, h_dim, r0, Ichi, Ialpha, &
                                omega_slp, omega)
@@ -239,9 +245,9 @@ contains
     integer(8) :: fact(0:nterms)
 
     real(r64)    :: c_new(3), rvec(3), d, theta, phi
-    complex(r64) :: ephi(-nterms-1:nterms+1), ephi1
-    real(r64)    :: rotmatf(-nterms:nterms,-nterms:nterms,0:nterms)
-    real(r64)    :: rotmatb(-nterms:nterms,-nterms:nterms,0:nterms)
+    complex(r64) :: ephi(0:2*nterms+2), ephi1
+    real(r64)    :: rotmatf(0:2*nterms,0:2*nterms,0:nterms)
+    real(r64)    :: rotmatb(0:2*nterms,0:2*nterms,0:nterms)
     real(r64)    :: fr(0:nterms+1)
     complex(r64) :: Icold(ncoeff), Iaold(4,ncoeff)
     complex(r64) :: Icrb(ncoeff), Icsz(ncoeff)
@@ -251,7 +257,7 @@ contains
     complex(r64) :: c0j, cc0j, a0j(4), ca0j(4)
     complex(r64) :: szj, cszj, aszj(4), caszj(4)
     real(r64)    :: frdc, frdc1, frdc2, tv, tv2
-    integer(8)   :: j, k, l, mm, mp, ij, ll, nmax
+    integer(8)   :: j, k, l, mm, mp, ij, ll, nmax, ep0
     integer(8)   :: col0, col0r, col02, idx, idx2, col, col2, colr
 
     nmax = 2*nterms
@@ -280,13 +286,14 @@ contains
       rvec = c_new
       call cart2polarl_r64(rvec, d, theta, phi)
 
-      ephi(0)  = (1.0_r64, 0.0_r64)
+      ep0 = nterms + 1_8
+      ephi(ep0)  = (1.0_r64, 0.0_r64)
       ephi1    = exp(IMA*phi)
-      ephi(1)  = ephi1
-      ephi(-1) = conjg(ephi1)
+      ephi(ep0+1)  = ephi1
+      ephi(ep0-1) = conjg(ephi1)
       do l = 1, nterms
-        ephi(l+1)  = ephi(l)*ephi(1)
-        ephi(-1-l) = conjg(ephi(l+1))
+        ephi(ep0+l+1)  = ephi(ep0+l)*ephi(ep0+1)
+        ephi(ep0-1-l) = conjg(ephi(ep0+l+1))
       end do
 
       block
@@ -321,8 +328,8 @@ contains
         cpsqc = ctp*sqc(:,2);  cnsqc = ctn*sqc(:,2)
 
         rd1(0,0) = 1.0_r64
-        rotmatf(0,0,0) = 1.0_r64
-        rotmatb(0,0,0) = 1.0_r64
+        rotmatf(nterms,nterms,0) = 1.0_r64
+        rotmatb(nterms,nterms,0) = 1.0_r64
 
         sgn1(0) = 1_8;  sgn2(0) = 1_8
         do q = 1, nterms
@@ -391,8 +398,13 @@ contains
               rd2(imp,im) = rd2(-imp,-im)
             end do
           end do
-          rotmatf(:,:,r) = rd2
-          rotmatb(:,:,r) = real(sgn12, r64)*rd2
+          do im = -nterms, nterms
+            do imp = -nterms, nterms
+              rotmatf(imp+nterms,im+nterms,r) = rd2(imp,im)
+              rotmatb(imp+nterms,im+nterms,r) = &
+                real(sgn12(imp,im), r64)*rd2(imp,im)
+            end do
+          end do
         end do
       end block
 
@@ -410,7 +422,7 @@ contains
 
       col0 = 0;  col0r = 0
       idx = 1;  col = 1;  mm = 0;  mp = 0
-      erb = ephi(-mm)*rotmatb(mp,mm,0)
+      erb = ephi(ep0-mm)*rotmatb(mp+nterms,mm+nterms,0)
       Icrb(col) = Icrb(col) + erb*Icold(idx)
       Icsz(idx) = Icsz(idx) + Icrb(idx)
       do l = 1, nterms
@@ -427,8 +439,8 @@ contains
       c0j = Icold(idx2);    cc0j = conjg(c0j)
       a0j = Iaold(:,idx2);  ca0j = conjg(a0j)
       do mp = -1, 0
-        erbn = ephi(-mm)*rotmatb(mp, mm,ij)
-        erbp = ephi( mm)*rotmatb(mp,-mm,ij)
+        erbn = ephi(ep0-mm)*rotmatb(mp+nterms, mm+nterms,ij)
+        erbp = ephi(ep0+mm)*rotmatb(mp+nterms,-mm+nterms,ij)
         Icrb(col2)   = Icrb(col2)   + erbn*c0j + erbp*cc0j
         Iarb(:,col2) = Iarb(:,col2) + erbn*a0j + erbp*ca0j
         col2 = col2 + 1
@@ -437,7 +449,7 @@ contains
       idx2 = idx2 + 1;  col2 = col0 + 1
       c0j = Icold(idx2);  a0j = Iaold(:,idx2)
       do mp = -ij, 0
-        erb = ephi(-mm)*rotmatb(mp,mm,ij)
+        erb = ephi(ep0-mm)*rotmatb(mp+nterms,mm+nterms,ij)
         Icrb(col2)   = Icrb(col2)   + erb*c0j
         Iarb(:,col2) = Iarb(:,col2) + erb*a0j
         col2 = col2 + 1
@@ -462,12 +474,12 @@ contains
         aszj = Iasz(:,idx2);  caszj = conjg(aszj)
         mp = 1
         if (mm < 0_8) then
-          erfn = ephi(mp)*rotmatf(mp, mm,ij)
-          erfp = ephi(mp)*rotmatf(mp,-mm,ij)
+          erfn = ephi(ep0+mp)*rotmatf(mp+nterms, mm+nterms,ij)
+          erfp = ephi(ep0+mp)*rotmatf(mp+nterms,-mm+nterms,ij)
           Icnew(colr)   = Icnew(colr)   + erfn*szj  + erfp*cszj
           Ianew(:,colr) = Ianew(:,colr) + erfn*aszj + erfp*caszj
         else
-          erf = ephi(mp)*rotmatf(mp,mm,ij)
+          erf = ephi(ep0+mp)*rotmatf(mp+nterms,mm+nterms,ij)
           Icnew(colr)   = Icnew(colr)   + erf*szj
           Ianew(:,colr) = Ianew(:,colr) + erf*aszj
         end if
@@ -485,8 +497,8 @@ contains
           a0j  = Iaold(:,idx2);  ca0j = conjg(a0j)
           col2 = col02 + 1
           do mp = -ij, 0
-            erbn = ephi(-mm)*rotmatb(mp, mm,ij)
-            erbp = ephi( mm)*rotmatb(mp,-mm,ij)
+            erbn = ephi(ep0-mm)*rotmatb(mp+nterms, mm+nterms,ij)
+            erbp = ephi(ep0+mm)*rotmatb(mp+nterms,-mm+nterms,ij)
             Icrb(col2)   = Icrb(col2)   + erbn*c0j + erbp*cc0j
             Iarb(:,col2) = Iarb(:,col2) + erbn*a0j + erbp*ca0j
             col2 = col2 + 1
@@ -496,7 +508,7 @@ contains
         idx2 = idx2 + 1;  col2 = col02 + 1
         c0j = Icold(idx2);  a0j = Iaold(:,idx2)
         do mp = -ij, 0
-          erb = ephi(-mm)*rotmatb(mp,mm,ij)
+          erb = ephi(ep0-mm)*rotmatb(mp+nterms,mm+nterms,ij)
           Icrb(col2)   = Icrb(col2)   + erb*c0j
           Iarb(:,col2) = Iarb(:,col2) + erb*a0j
           col2 = col2 + 1
@@ -523,12 +535,12 @@ contains
           aszj = Iasz(:,idx2);  caszj = conjg(aszj)
           do mp = 1, ij
             if (mm < 0_8) then
-              erfn = ephi(mp)*rotmatf(mp, mm,ij)
-              erfp = ephi(mp)*rotmatf(mp,-mm,ij)
+              erfn = ephi(ep0+mp)*rotmatf(mp+nterms, mm+nterms,ij)
+              erfp = ephi(ep0+mp)*rotmatf(mp+nterms,-mm+nterms,ij)
               Icnew(colr)   = Icnew(colr)   + erfn*szj  + erfp*cszj
               Ianew(:,colr) = Ianew(:,colr) + erfn*aszj + erfp*caszj
             else
-              erf = ephi(mp)*rotmatf(mp,mm,ij)
+              erf = ephi(ep0+mp)*rotmatf(mp+nterms,mm+nterms,ij)
               Icnew(colr)   = Icnew(colr)   + erf*szj
               Ianew(:,colr) = Ianew(:,colr) + erf*aszj
             end if

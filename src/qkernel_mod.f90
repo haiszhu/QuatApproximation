@@ -8,8 +8,11 @@ module qkernel_mod
   implicit none
   private
   public :: qak_q0kl_r64, qak_q1kl_r64, qak_q2kl_r64, qak_q3kl_r64
+  public :: qak_qnm_i_r64, qak_qnm_i_nslots
+#ifndef BIESOLVER_R64_ONLY
   public :: qak_q0kl_r128, qak_q1kl_r128, qak_q2kl_r128, qak_q3kl_r128
-  public :: qak_qnm_i_r64, qak_qnm_i_r128, qak_qnm_i_nslots
+  public :: qak_qnm_i_r128
+#endif
 
   integer(8), parameter, public :: QAK_LPTYPE_D = 0_8
   integer(8), parameter, public :: QAK_LPTYPE_S = 1_8
@@ -256,6 +259,7 @@ contains
   ! 'T' (DLPn) is stubbed in both precisions; not yet implemented.
   ! ================================================================
 
+#ifndef BIESOLVER_R64_ONLY
   subroutine qak_qnm_i_r128(idx, N, ncoeff, sx, lptype_id, &
                             F, F1, F2, F3, gradxyz, &
                             q_i, q_j, q_k)
@@ -277,7 +281,9 @@ contains
         error stop
     end select
   end subroutine qak_qnm_i_r128
+#endif
 
+#ifndef BIESOLVER_R64_ONLY
   subroutine qak_q0kl_r128(N, ncoeff, sx, lptype_id, F, F1, F2, F3, gradxyz, q_i, q_j, q_k)
     integer(8), intent(in)  :: N, ncoeff, lptype_id
     real(r128), intent(in)  :: sx(3, N)
@@ -326,7 +332,9 @@ contains
       error stop
     end select
   end subroutine qak_q0kl_r128
+#endif
 
+#ifndef BIESOLVER_R64_ONLY
   subroutine qak_q1kl_r128(N, ncoeff, sx, lptype_id, F, F1, F2, F3, gradxyz, q_i, q_j, q_k)
     integer(8), intent(in)  :: N, ncoeff, lptype_id
     real(r128), intent(in)  :: sx(3, N)
@@ -375,7 +383,9 @@ contains
       error stop
     end select
   end subroutine qak_q1kl_r128
+#endif
 
+#ifndef BIESOLVER_R64_ONLY
   subroutine qak_q2kl_r128(N, ncoeff, sx, lptype_id, F, F1, F2, F3, gradxyz, q_i, q_j, q_k)
     integer(8), intent(in)  :: N, ncoeff, lptype_id
     real(r128), intent(in)  :: sx(3, N)
@@ -424,7 +434,9 @@ contains
       error stop
     end select
   end subroutine qak_q2kl_r128
+#endif
 
+#ifndef BIESOLVER_R64_ONLY
   subroutine qak_q3kl_r128(N, ncoeff, sx, lptype_id, F, F1, F2, F3, gradxyz, q_i, q_j, q_k)
     integer(8), intent(in)  :: N, ncoeff, lptype_id
     real(r128), intent(in)  :: sx(3, N)
@@ -473,5 +485,6 @@ contains
       error stop
     end select
   end subroutine qak_q3kl_r128
+#endif
 
 end module qkernel_mod

@@ -8,10 +8,17 @@
 !     Tensor-product analog of koorn_geom_mod::line3quadr_3dline.
 !
 module tensor_geom_mod
+#ifdef BIESOLVER_R64_ONLY
+  use quatapproximation_mod, only: r64, r128, gauss_r64
+#else
   use quatapproximation_mod, only: r64, r128, gauss_r64, gauss_r128
+#endif
   implicit none
   private
-  public :: line3quadr_3dline_T, line3quadr_3dline_T_r128
+  public :: line3quadr_3dline_T
+#ifndef BIESOLVER_R64_ONLY
+  public :: line3quadr_3dline_T_r128
+#endif
 
 contains
 
@@ -182,6 +189,7 @@ contains
     end if
   end subroutine tparam_to_uv_square
 
+#ifndef BIESOLVER_R64_ONLY
   ! ================================================================
   ! r128 siblings -- bit-for-bit mirror of line3quadr_3dline_T and its
   ! two private helpers (legepols, tparam_to_uv_square) at real(16).
@@ -309,5 +317,6 @@ contains
       uv(2) =  1.0_r128 - (4.0_r128/PI_)*(tt - 1.5_r128*PI_)
     end if
   end subroutine tparam_to_uv_square_r128
+#endif
 
 end module tensor_geom_mod

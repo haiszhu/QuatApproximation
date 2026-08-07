@@ -80,7 +80,9 @@ contains
     Fz = (0.0_r64, 0.0_r64)
 
     do k = 1, nt
-      ztarg    = ztargs(:, k)
+      ztarg(1) = ztargs(1, k)
+      ztarg(2) = ztargs(2, k)
+      ztarg(3) = ztargs(3, k)
       zdiff(1) = ztarg(1) - center(1)
       zdiff(2) = ztarg(2) - center(2)
       zdiff(3) = ztarg(3) - center(3)
@@ -168,6 +170,7 @@ contains
 
   end subroutine l3dtavecevalmat_r64
 
+#ifndef BIESOLVER_R64_ONLY
   ! ------------------------------------------------------------------
   ! l3dtavecevalmat_r128
   ! r128 twin of l3dtavecevalmat_r64.  Kind-only substitution; no
@@ -301,6 +304,7 @@ contains
     deallocate(pp, ppd, rat1, rat2, fr, frder, ephi)
 
   end subroutine l3dtavecevalmat_r128
+#endif
 
   ! ------------------------------------------------------------------
   ! cart2polarl_r64
@@ -323,6 +327,7 @@ contains
     end if
   end subroutine cart2polarl_r64
 
+#ifndef BIESOLVER_R64_ONLY
   subroutine cart2polarl_r128(zat, r, theta, phi)
     implicit none
     real(r128), intent(in)  :: zat(3)
@@ -338,6 +343,7 @@ contains
       phi = atan2(zat(2), zat(1))
     end if
   end subroutine cart2polarl_r128
+#endif
 
   ! ------------------------------------------------------------------
   ! ylgndrini_r64
@@ -366,6 +372,7 @@ contains
     end do
   end subroutine ylgndrini_r64
 
+#ifndef BIESOLVER_R64_ONLY
   subroutine ylgndrini_r128(nmax, rat1, rat2)
     implicit none
     integer(8), intent(in)  :: nmax
@@ -387,6 +394,7 @@ contains
       end do
     end do
   end subroutine ylgndrini_r128
+#endif
 
   ! ------------------------------------------------------------------
   ! ylgndru2sf_r64
@@ -439,6 +447,7 @@ contains
     end do
   end subroutine ylgndru2sf_r64
 
+#ifndef BIESOLVER_R64_ONLY
   subroutine ylgndru2sf_r128(nmax, x, y, d, rat1, rat2)
     implicit none
     integer(8), intent(in)  :: nmax
@@ -475,6 +484,7 @@ contains
       end do
     end do
   end subroutine ylgndru2sf_r128
+#endif
 
   ! ------------------------------------------------------------------
   ! evaltensorproductharmonicgrad_r64

@@ -17,9 +17,11 @@ module koorn_geom_mod
   integer, parameter :: r128 = 16
   private
   public :: koorn_vals2coefs_coefs2vals, line3quadr_3dline, &
-            circumcircle_transform_3d, circumcircle_transform_3d_r128, &
-            lqkg_setup_target_r128, get_vioreanu_nodes, get_vioreanu_wts, &
-            koorn_pols, koorn_pols_batch_r64, lu_solve_r128
+            circumcircle_transform_3d, get_vioreanu_nodes, get_vioreanu_wts, &
+            koorn_pols, koorn_pols_batch_r64
+#ifndef BIESOLVER_R64_ONLY
+  public :: circumcircle_transform_3d_r128, lqkg_setup_target_r128, lu_solve_r128
+#endif
 
 contains
 
@@ -33,7 +35,7 @@ contains
     real(r64), intent(in)  :: uv(2)
     integer(8), intent(in) :: nmax
     integer(8), intent(out):: npols
-    real(r64), intent(out) :: pols(*)
+    real(r64), intent(out) :: pols((nmax+1_8)*(nmax+2_8)/2_8)
 
     real(r64) :: legpols(0:100), jacpols(0:100,0:100)
     real(r64) :: u, v, z, y, x, sc, an, bn, cn
@@ -171,11 +173,12 @@ contains
     real(r64),  intent(in)  :: uvs(2,npols)
     real(r64),  intent(out) :: amat(npols,npols)
 
-    real(r64)  :: pols(2000)
+    real(r64)  :: uv(2), pols(2000)
     integer(8) :: i, j, npols2
 
     do i = 1, npols
-      call koorn_pols(uvs(:,i), nmax, npols2, pols)
+      uv = uvs(:,i)
+      call koorn_pols(uv, nmax, npols2, pols)
       do j = 1, npols
         amat(i,j) = pols(j)
       end do
@@ -244,6 +247,7 @@ contains
   ! small block matrices used by the future Lap3dDLP_closepanel_r128
   ! orchestration.
   ! ----------------------------------------------------------------
+#ifndef BIESOLVER_R64_ONLY
   subroutine lu_solve_r128(n, A, k, B)
     integer(8), intent(in)    :: n, k
     real(r128), intent(inout) :: A(n,n), B(n,k)
@@ -287,6 +291,7 @@ contains
     end do
 
   end subroutine lu_solve_r128
+#endif
 
   ! ----------------------------------------------------------------
   ! koorn_vals2coefs_coefs2vals  (public)
@@ -363,15 +368,19 @@ contains
     ! uvlo, uvhi: reference (u,v) coords of panel endpoints
     uvlo = 0.0_r64;  uvhi = 0.0_r64
     do k = 1, sbdnp
-      call tparam_to_uv(tlo(k), thold1, thold2, tholdinv1, uvlo(:,k))
-      call tparam_to_uv(thi(k), thold1, thold2, tholdinv1, uvhi(:,k))
+      call tparam_to_uv(tlo(k), thold1, thold2, tholdinv1, uv)
+      uvlo(:,k) = uv
+      call tparam_to_uv(thi(k), thold1, thold2, tholdinv1, uv)
+      uvhi(:,k) = uv
     end do
 
     ! Panel endpoint positions (for xlo, xhi — not used after vertex extraction)
     do k = 1, sbdnp
-      call koorn_pols(uvlo(:,k), korder, ii, pols)
+      uv = uvlo(:,k)
+      call koorn_pols(uv, korder, ii, pols)
       xlo(:,k) = matmul(pols(1:kpols), coefs_xyz)
-      call koorn_pols(uvhi(:,k), korder, ii, pols)
+      uv = uvhi(:,k)
+      call koorn_pols(uv, korder, ii, pols)
       xhi(:,k) = matmul(pols(1:kpols), coefs_xyz)
     end do
 
@@ -380,7 +389,8 @@ contains
     uvend(:,2) = [1.0_r64, 0.0_r64]
     uvend(:,3) = [0.0_r64, 1.0_r64]
     do k = 1, 3
-      call koorn_pols(uvend(:,k), korder, ii, pols)
+      uv = uvend(:,k)
+      call koorn_pols(uv, korder, ii, pols)
       r_vert0b(:,k) = matmul(pols(1:kpols), coefs_xyz)
     end do
 
@@ -488,6 +498,7 @@ contains
   ! ----------------------------------------------------------------
   ! circumcircle_transform_3d_r128  (real(16) port)
   ! ----------------------------------------------------------------
+#ifndef BIESOLVER_R64_ONLY
   subroutine circumcircle_transform_3d_r128(r_vert, R, c, alpha)
     real(r128), intent(in)    :: r_vert(3,3)
     real(r128), intent(inout) :: R(3,3), c(3), alpha
@@ -523,6 +534,7 @@ contains
     R(1,:) = e1;  R(2,:) = e2;  R(3,:) = e3
 
   end subroutine circumcircle_transform_3d_r128
+#endif
 
   ! ----------------------------------------------------------------
   ! lqkg_setup_target_r128
@@ -540,6 +552,7 @@ contains
   !   6. kdata(:,j) = qhat for j = 1..m   (Asvestas convention).
   ! All compute is r128; outputs are exposed for HDF5 write at the mex layer.
   ! ----------------------------------------------------------------
+#ifndef BIESOLVER_R64_ONLY
   subroutine lqkg_setup_target_r128(m, n, nbd, sbdnp, nquad,                  &
                                     r_vert, tx, snx, sxbd_in, Dgl,            &
                                     R, c, alpha,                              &
@@ -623,5 +636,6 @@ contains
     end do
 
   end subroutine lqkg_setup_target_r128
+#endif
 
 end module koorn_geom_mod

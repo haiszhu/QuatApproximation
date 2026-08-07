@@ -108,6 +108,7 @@ contains
 
   end subroutine gauss_r64
 
+#ifndef BIESOLVER_R64_ONLY
   ! ------------------------------------------------------------------
   ! gauss_r128
   ! r128 twin of gauss_r64.  Same Newton iteration + barycentric D
@@ -165,6 +166,7 @@ contains
     end do
 
   end subroutine gauss_r128
+#endif
 
   ! ------------------------------------------------------------------
   ! bclaginterpweights_r64
@@ -383,6 +385,7 @@ contains
     end do
   end subroutine assemble_subdivided_nodes_r64
 
+#ifndef BIESOLVER_STELLARATOR_BUILD
   ! ------------------------------------------------------------------
   ! get_subdivided_triangles_r64
   ! Recursively apply subdivide_simplex_r64 L times to a root triangle
@@ -420,5 +423,6 @@ contains
     all_tris = cur
     deallocate(cur)
   end subroutine get_subdivided_triangles_r64
+#endif
 
 end module quatapproximation_mod
