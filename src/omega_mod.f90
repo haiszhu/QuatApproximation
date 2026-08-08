@@ -239,10 +239,14 @@ contains
 
     complex(r64), parameter :: IMA   = (0.0_r64, 1.0_r64)
     complex(r64), parameter :: CZERO = (0.0_r64, 0.0_r64)
+    real(r64),    parameter :: PRECIS = 1.0e-20_r64
 
     real(r64)  :: carray(0:4*nterms,0:4*nterms), dc(0:4*nterms,0:4*nterms)
     real(r64)  :: factinv(0:nterms)
     integer(8) :: fact(0:nterms)
+    real(r64)  :: sqc(0:2*nterms,2), ww
+    integer(8) :: sgn1(0:nterms), sgn2(-nterms:nterms)
+    integer(8) :: sgn12(-nterms:nterms,-nterms:nterms)
 
     real(r64)    :: c_new(3), rvec(3), d, theta, phi
     complex(r64) :: ephi(0:2*nterms+2), ephi1
@@ -257,7 +261,12 @@ contains
     complex(r64) :: c0j, cc0j, a0j(4), ca0j(4)
     complex(r64) :: szj, cszj, aszj(4), caszj(4)
     real(r64)    :: frdc, frdc1, frdc2, tv, tv2
-    integer(8)   :: j, k, l, mm, mp, ij, ll, nmax, ep0
+    real(r64)    :: rd1(-nterms:nterms,-nterms:nterms)
+    real(r64)    :: rd2(-nterms:nterms,-nterms:nterms)
+    real(r64)    :: ctsqc(0:2*nterms), stsqc(0:2*nterms)
+    real(r64)    :: cpsqc(0:2*nterms), cnsqc(0:2*nterms)
+    real(r64)    :: ct, st, hst, ctp, ctn, dd, sc, ijinv
+    integer(8)   :: j, k, l, mm, mp, ij, ll, nmax, ep0, im, imp, q, r
     integer(8)   :: col0, col0r, col02, idx, idx2, col, col2, colr
 
     nmax = 2*nterms
@@ -276,6 +285,24 @@ contains
     do l = 2, nterms
       fact(l)    = fact(l-1)*l
       factinv(l) = 1.0_r64/real(fact(l), r64)
+    end do
+    ww = sqrt(0.5_r64)
+    do q = 0, 2*nterms
+      sqc(q,1) = sqrt(real(q, r64))
+    end do
+    sqc(0,2) = 0.0_r64
+    if (nterms > 0_8) sqc(1,2) = 0.0_r64
+    do q = 2, 2*nterms
+      sqc(q,2) = sqrt(real(q, r64)*real(q-1, r64)*0.5_r64)
+    end do
+    sgn1(0) = 1_8;  sgn2(0) = 1_8
+    do q = 1, nterms
+      sgn1(q)  = -sgn1(q-1)
+      sgn2(q)  =  sgn1(q)
+      sgn2(-q) =  sgn1(q)
+    end do
+    do q = -nterms, nterms
+      sgn12(:,q) = sgn2(q)*sgn2
     end do
 
     do j = 1, m
@@ -296,52 +323,20 @@ contains
         ephi(ep0-1-l) = conjg(ephi(ep0+l+1))
       end do
 
-      block
-        real(r64), parameter :: PRECIS = 1.0e-20_r64
-        real(r64)  :: rd1(-nterms:nterms,-nterms:nterms)
-        real(r64)  :: rd2(-nterms:nterms,-nterms:nterms)
-        real(r64)  :: sqc(0:2*nterms,2)
-        real(r64)  :: ctsqc(0:2*nterms), stsqc(0:2*nterms)
-        real(r64)  :: cpsqc(0:2*nterms), cnsqc(0:2*nterms)
-        integer(8) :: sgn1(0:nterms), sgn2(-nterms:nterms)
-        integer(8) :: sgn12(-nterms:nterms,-nterms:nterms)
-        real(r64)  :: ww, ct, st, hst, ctp, ctn, dd, sc, ijinv
-        integer(8) :: im, imp, q, r
+      rd1 = 0.0_r64;  rd2 = 0.0_r64
+      ct = cos(theta);   if (abs(ct) <= PRECIS) ct = 0.0_r64
+      st = sin(-theta);  if (abs(st) <= PRECIS) st = 0.0_r64
+      hst = ww*st
+      ctp =  2.0_r64*ww*cos(theta*0.5_r64)**2
+      ctn = -2.0_r64*ww*sin(theta*0.5_r64)**2
+      ctsqc = ct*sqc(:,1);   stsqc = st*sqc(:,1)
+      cpsqc = ctp*sqc(:,2);  cnsqc = ctn*sqc(:,2)
 
-        rd1 = 0.0_r64;  rd2 = 0.0_r64
-        ww = sqrt(0.5_r64)
-        do q = 0, 2*nterms
-          sqc(q,1) = sqrt(real(q, r64))
-        end do
-        sqc(0,2) = 0.0_r64
-        if (nterms > 0_8) sqc(1,2) = 0.0_r64
-        do q = 2, 2*nterms
-          sqc(q,2) = sqrt(real(q, r64)*real(q-1, r64)*0.5_r64)
-        end do
+      rd1(0,0) = 1.0_r64
+      rotmatf(nterms,nterms,0) = 1.0_r64
+      rotmatb(nterms,nterms,0) = 1.0_r64
 
-        ct = cos(theta);   if (abs(ct) <= PRECIS) ct = 0.0_r64
-        st = sin(-theta);  if (abs(st) <= PRECIS) st = 0.0_r64
-        hst = ww*st
-        ctp =  2.0_r64*ww*cos(theta*0.5_r64)**2
-        ctn = -2.0_r64*ww*sin(theta*0.5_r64)**2
-        ctsqc = ct*sqc(:,1);   stsqc = st*sqc(:,1)
-        cpsqc = ctp*sqc(:,2);  cnsqc = ctn*sqc(:,2)
-
-        rd1(0,0) = 1.0_r64
-        rotmatf(nterms,nterms,0) = 1.0_r64
-        rotmatb(nterms,nterms,0) = 1.0_r64
-
-        sgn1(0) = 1_8;  sgn2(0) = 1_8
-        do q = 1, nterms
-          sgn1(q)  = -sgn1(q-1)
-          sgn2(q)  =  sgn1(q)
-          sgn2(-q) =  sgn1(q)
-        end do
-        do q = -nterms, nterms
-          sgn12(:,q) = sgn2(q)*sgn2
-        end do
-
-        do r = 1, nterms
+      do r = 1, nterms
           ijinv = 1.0_r64/real(r, r64)
 
           do im = -r, -1
@@ -405,8 +400,7 @@ contains
                 real(sgn12(imp,im), r64)*rd2(imp,im)
             end do
           end do
-        end do
-      end block
+      end do
 
       fr(0) = 1.0_r64;  fr(1) = d
       do l = 2, nterms+1
