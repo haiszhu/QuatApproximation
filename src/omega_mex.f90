@@ -29,3 +29,16 @@ subroutine qao_omegaall_mex(m, dim1, n, h_dim, morder, r0, M_all, &
   call qao_omegaall_r64(m, dim1, n, h_dim, morder, r0, M_all, &
                         onm0, onm1, onm2, onm3, ijIdx, omega)
 end subroutine qao_omegaall_mex
+
+subroutine qao_omegasdlp_mex(m, nterms, ncoeff, h_dim, r0, Ichi, &
+                             Ialpha, omega_slp, omega)
+  use quatapproximation_mod, only: r64
+  use omega_mod, only: qao_omegasdlp_r64
+  implicit none
+  integer(8), intent(in) :: m, nterms, ncoeff, h_dim
+  real(r64), intent(in) :: r0(3,m)
+  complex(r64), intent(in) :: Ichi(m,ncoeff,4), Ialpha(m,ncoeff,4)
+  real(r64), intent(out) :: omega_slp(h_dim,m), omega(h_dim,m,4)
+  call qao_omegasdlp_r64(m, nterms, ncoeff, h_dim, r0, Ichi, Ialpha, &
+                         omega_slp, omega)
+end subroutine qao_omegasdlp_mex

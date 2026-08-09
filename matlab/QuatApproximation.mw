@@ -454,6 +454,25 @@ Omega   = zeros(m, h_dim4);
 # FORTRAN qao_omegaall_mex(int[1] m, int[1] dim1, int[1] n, int[1] h_dim, int[1] morder, double[3,m] r0, double[dim1,m] M_all, double[nh_dim,4] onm_0, double[nh_dim,4] onm_1, double[nh_dim,4] onm_2, double[nh_dim,4] onm_3, int[2,h_dim] ijIdx, inout double[m,h_dim4] Omega);
 end
 
+@function [omega_slp, omega] = qao_omegasdlp_mex(m, nterms, ncoeff, h_dim, r0, Ichi, Ialpha, omega_slp, omega)
+m = double(m);
+nterms = double(nterms);
+ncoeff = double(ncoeff);
+h_dim = double(h_dim);
+nc4 = 4*ncoeff;
+m4 = 4*m;
+r0 = double(reshape(r0, 3, m));
+Ichi = double(reshape(Ichi, m, nc4));
+Ialpha = double(reshape(Ialpha, m, nc4));
+if nargin < 8 || isempty(omega_slp), omega_slp = zeros(h_dim, m); end
+if nargin < 9 || isempty(omega), omega = zeros(h_dim, m, 4); end
+Ichi = reshape(Ichi, m, nc4);
+Ialpha = reshape(Ialpha, m, nc4);
+omega = reshape(omega, h_dim, m4);
+# FORTRAN qao_omegasdlp_mex(int[1] m, int[1] nterms, int[1] ncoeff, int[1] h_dim, double[3,m] r0, dcomplex[m,nc4] Ichi, dcomplex[m,nc4] Ialpha, inout double[h_dim,m] omega_slp, inout double[h_dim,m4] omega);
+omega = reshape(omega, h_dim, m, 4);
+end
+
 % --------------------------------------------------------------------------
 % qatg_line3quadr_3dline_T_mex
 % Tensor-product analog of qakg_line3quadr_3dline_mex: GL boundary nodes,
