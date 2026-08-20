@@ -10,8 +10,13 @@ paraboloid_refinement_myerr.dat
 
 # mex binary (rebuilt by `make mex`)
 matlab/QuatApproximation_mex.mexmaca64
+matlab/QuatApproximation_mex.mexw64
+matlab/libhdf5.dll
+matlab/libwinpthread-1.dll
+matlab/libz.dll
 
 # build artifacts
 build/
+build-windows/
 
 .DS_Store

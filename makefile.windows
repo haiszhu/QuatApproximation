@@ -1,0 +1,88 @@
+include make.inc.windows
+
+.DEFAULT_GOAL := all
+
+ROOT := $(dir $(abspath $(lastword $(MAKEFILE_LIST))))
+ROOT := $(patsubst %/,%,$(ROOT))
+SRC_DIR := $(ROOT)/src
+MATLAB_DIR := $(ROOT)/matlab
+TEST_DIR := $(ROOT)/test
+BLD_DIR := $(ROOT)/build-windows
+
+QA_SOURCES := $(SRC_DIR)/quatapproximation_mod.f90 \
+              $(SRC_DIR)/quatapproximation_mex.f90 \
+              $(SRC_DIR)/harmonic_mod.f90 \
+              $(SRC_DIR)/harmonic_mex.f90 \
+              $(SRC_DIR)/koorn_geom_mod.f90 \
+              $(SRC_DIR)/koorn_geom_mex.f90 \
+              $(SRC_DIR)/qkernel_mod.f90 \
+              $(SRC_DIR)/qkernel_mex.f90 \
+              $(SRC_DIR)/omega_mod.f90 \
+              $(SRC_DIR)/omega_mex.f90 \
+              $(SRC_DIR)/tensor_geom_mod.f90 \
+              $(SRC_DIR)/tensor_geom_mex.f90
+QA_OBJECTS := $(patsubst $(SRC_DIR)/%.f90,$(BLD_DIR)/%.o,$(QA_SOURCES)) \
+              $(BLD_DIR)/hdf5_io.o
+
+STATIC_LIBRARY := $(BLD_DIR)/libQuatApproximation.a
+MEX_SOURCE := $(MATLAB_DIR)/QuatApproximation_mex.c
+MEX_FILE := $(MATLAB_DIR)/QuatApproximation_mex.mexw64
+HDF5_RUNTIME_NAMES := libhdf5.dll libwinpthread-1.dll libz.dll
+HDF5_RUNTIMES := $(addprefix $(MATLAB_DIR)/,$(HDF5_RUNTIME_NAMES))
+
+.PHONY: all lib mex validate test clean
+
+all: mex
+
+lib: validate $(STATIC_LIBRARY)
+
+mex: validate $(MEX_FILE) $(HDF5_RUNTIMES)
+
+validate:
+	@test -f "$(FC)" || { echo "Missing Fortran compiler: $(FC)"; exit 1; }
+	@test -f "$(CC)" || { echo "Missing C compiler: $(CC)"; exit 1; }
+	@test -f "$(AR)" || { echo "Missing archiver: $(AR)"; exit 1; }
+	@test -f "$(MEX)" || { echo "Missing MATLAB MEX driver: $(MEX)"; exit 1; }
+	@test -f "$(MATLAB)" || { echo "Missing MATLAB executable: $(MATLAB)"; exit 1; }
+	@test -f "$(HDF5_INCLUDE)/hdf5.h" || { echo "Missing HDF5 header: $(HDF5_INCLUDE)/hdf5.h"; exit 1; }
+	@test -f "$(HDF5_IMPORT)" || { echo "Missing HDF5 import library: $(HDF5_IMPORT)"; exit 1; }
+	@test -f "$(HDF5_BIN)/libhdf5.dll" || { echo "Missing HDF5 runtime: $(HDF5_BIN)/libhdf5.dll"; exit 1; }
+
+$(BLD_DIR):
+	mkdir -p "$@"
+
+$(BLD_DIR)/%.o: $(SRC_DIR)/%.f90 | $(BLD_DIR)
+	"$(FC)" $(FFLAGS) -J"$(BLD_DIR)" -I"$(BLD_DIR)" -I"$(SRC_DIR)" -c "$<" -o "$@"
+
+$(BLD_DIR)/hdf5_io.o: $(SRC_DIR)/hdf5_io.c | $(BLD_DIR)
+	"$(CC)" $(CFLAGS) -I"$(HDF5_INCLUDE)" -c "$<" -o "$@"
+
+$(BLD_DIR)/quatapproximation_mex.o: $(BLD_DIR)/quatapproximation_mod.o
+$(BLD_DIR)/harmonic_mex.o: $(BLD_DIR)/harmonic_mod.o
+$(BLD_DIR)/koorn_geom_mex.o: $(BLD_DIR)/koorn_geom_mod.o $(BLD_DIR)/quatapproximation_mod.o
+$(BLD_DIR)/qkernel_mod.o: $(BLD_DIR)/quatapproximation_mod.o
+$(BLD_DIR)/qkernel_mex.o: $(BLD_DIR)/qkernel_mod.o $(BLD_DIR)/quatapproximation_mod.o
+$(BLD_DIR)/omega_mod.o: $(BLD_DIR)/quatapproximation_mod.o
+$(BLD_DIR)/omega_mex.o: $(BLD_DIR)/omega_mod.o $(BLD_DIR)/quatapproximation_mod.o
+$(BLD_DIR)/tensor_geom_mod.o: $(BLD_DIR)/quatapproximation_mod.o
+$(BLD_DIR)/tensor_geom_mex.o: $(BLD_DIR)/tensor_geom_mod.o $(BLD_DIR)/quatapproximation_mod.o
+
+$(STATIC_LIBRARY): $(QA_OBJECTS)
+	"$(AR)" rcs "$@" $(QA_OBJECTS)
+
+$(MEX_FILE): $(STATIC_LIBRARY) $(MEX_SOURCE)
+	MW_MINGW64_LOC="$(MINGWROOT)" "$(MEX)" $(MEXFLAGS) \
+	  -output "$(MATLAB_DIR)/QuatApproximation_mex" \
+	  "$(MEX_SOURCE)" "$(STATIC_LIBRARY)" \
+	  "$(HDF5_IMPORT)" \
+	  -L"$(MINGW_LPATH)" -lgfortran -lquadmath -lgomp \
+	  -L"$(MATLAB_LPATH)" -lmwblas -lmwlapack
+
+$(MATLAB_DIR)/%.dll: $(HDF5_BIN)/%.dll
+	cp "$<" "$@"
+
+test: mex
+	"$(MATLAB)" -batch "cd('$(ROOT)'); addpath('test'); windows_mex_smoke"
+
+clean:
+	rm -rf "$(BLD_DIR)" "$(MEX_FILE)" $(HDF5_RUNTIMES)
